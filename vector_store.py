@@ -22,11 +22,15 @@ def load_index():
     import faiss
     if os.path.exists(INDEX_FILE):
         index = faiss.read_index(INDEX_FILE)
+    else:
+        index = faiss.IndexFlatL2(384)  # embedding size
+    
+    if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "rb") as f:
             metadata = pickle.load(f)
     else:
-        index = faiss.IndexFlatL2(384)  # embedding size
         metadata = []
+
     return index, metadata
     
 def add_to_vector_store(text, extra_data):
