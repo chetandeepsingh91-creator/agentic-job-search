@@ -4,6 +4,7 @@ start = time.time()
 print("App start...")
 
 import streamlit as st
+from ui.profile_page import render_profile
 
 @st.cache_resource
 def load_embedding_model():
@@ -11,12 +12,25 @@ def load_embedding_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
     
 def get_vector_store():
-    from vector_store import add_to_vector_store
-    return add_to_vector_store
+    from memory import vector_store
+    return vector_store.add_to_vector_store 
     
     
-from agents import job_understanding_agent, fit_agent, resume_agent, learning_agent, job_crawler_agent, ranking_agent, apply_decision_agent, application_agent, tailored_resume_agent
-from memory import add_to_memory
+    
+from agents import (
+    job_understanding_agent,
+    fit_agent,
+    tailored_resume_agent,
+    apply_decision_agent,
+    ranking_agent,
+    jobs_crawler_agent
+)
+
+# from memory import (
+    # add_to_memory,
+    # load_memory,
+    # save_memory
+# )
 
 print("Imports done:", time.time() - start)
 
@@ -26,7 +40,23 @@ st.title("🤖 Multi-Agent Job Search System")
 
 role = st.text_input("🎯 Target Role", value="Product Manager")
 
-resume = st.text_area("📄 Paste Resume", height=250)
+render_profile()
+
+from services.profile_service import ProfileService
+
+profile_service = ProfileService()
+
+profile = profile_service.get_profile()
+
+if profile is None:
+
+    st.warning(
+        "Please complete your Career Profile first."
+    )
+
+    st.stop()
+
+resume = profile.resume
 
 if st.button("Run AI Job Copilot 🚀"):
 
@@ -35,8 +65,8 @@ if st.button("Run AI Job Copilot 🚀"):
     else:
         with st.spinner("Finding and evaluating jobs..."):
 
-            jobs = job_crawler_agent(role)
-            st.write(jobs)
+            jobs = jobs_crawler_agent.run(role)
+            #st.write(jobs)
             # results = []
             final_results = []
             
@@ -45,12 +75,15 @@ if st.button("Run AI Job Copilot 🚀"):
             for job in jobs:
                 jd = job.get("description", "")
                     
-                jd_summary = job_understanding_agent(jd)
-                fit = fit_agent(resume, jd_summary)
+                jd_summary = job_understanding_agent.run(jd)
+
+                #st.write(f"📊 Job Summary: {jd_summary}")
+
+                fit = fit_agent.run(resume, jd_summary)
                 
-                decision = apply_decision_agent(job, fit)
+                decision = apply_decision_agent.run(jd_summary, fit)
                 
-                tailored_resume = tailored_resume_agent(resume, jd_summary)
+                tailored_resume = tailored_resume_agent.run(resume, jd_summary)
                 
                 final_results.append({
                 "job": job,
