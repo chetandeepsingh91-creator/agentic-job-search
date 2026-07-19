@@ -33,7 +33,7 @@ def render_profile():
 
         if st.button("✨ Extract Profile with AI"):
 
-            with st.spinner("Understanding your resume..."):
+            with st.spinner("Parsing your resume..."):
 
                 try:
                                        
