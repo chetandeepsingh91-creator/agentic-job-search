@@ -78,24 +78,9 @@ Instead of simply chatting with an LLM, the application uses **multiple speciali
 
 # 🏗 Architecture
 
-> *(Insert architecture diagram here)*
+<img width="1536" height="1024" alt="ChatGPT Image Jul 20, 2026, 11_15_37 PM" src="https://github.com/user-attachments/assets/6e6234f5-2c82-4408-a6a7-57b02d31cb08" />
 
-Example:
 
-```
-                        Career Profile
-                              │
-        ┌─────────────────────┼────────────────────┐
-        ▼                     ▼                    ▼
- Job Search Agent      Fit Analysis Agent   Resume Tailoring Agent
-        │                     │                    │
-        └─────────────────────┼────────────────────┘
-                              ▼
-                     Apply Decision Agent
-                              │
-                              ▼
-                         Streamlit UI
-```
 
 ---
 
@@ -186,7 +171,8 @@ streamlit run app.py
 
 ## Profile Extraction
 
-<img width="893" height="320" alt="image" src="https://github.com/user-attachments/assets/3c1f92f9-4cba-4d2f-a4f1-34211fbfcd2b" />
+<img width="849" height="398" alt="image" src="https://github.com/user-attachments/assets/938614e3-b9dc-4e87-92d7-76f2d5851b01" />
+
 
 
 ---
