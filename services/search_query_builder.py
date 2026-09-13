@@ -6,19 +6,19 @@ class SearchQueryBuilder:
     @staticmethod
     def build(profile):
 
-        # Preferred Roles
+        # Preferred Roles — use primary role for SerpAPI Google Jobs compatibility
         roles = profile.preferred_roles or []
 
         if roles:
-            role_query = " OR ".join(f'"{role}"' for role in roles)
+            role_query = roles[0]
         else:
-            role_query = '"Product Manager"'
+            role_query = "Product Manager"
 
-        # Preferred Locations
+        # Preferred Locations — use primary location as SerpAPI location param
         locations = profile.preferred_locations or []
 
         if locations:
-            location_query = " OR ".join(locations)
+            location_query = locations[0]
         else:
             location_query = "India"
 

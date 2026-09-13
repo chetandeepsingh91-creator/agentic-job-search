@@ -22,11 +22,14 @@ def get_vector_store():
 from agents import (
     job_understanding_agent,
     fit_agent,
-    tailored_resume_agent,
     apply_decision_agent,
     ranking_agent,
     jobs_crawler_agent
 )
+from services.networking_service import NetworkingService
+from services.outreach_service import draft_outreach_messages
+from services.resume_service import generate_tailored_resume_pdf, is_apply_yes
+from ui.networking_section import render_networking_result
 
 # from memory import (
     # add_to_memory,
@@ -38,7 +41,7 @@ print("Imports done:", time.time() - start)
 
 st.set_page_config(page_title="AI Job Agent", layout="wide")
 
-st.title("🤖 Multi-Agent Job Search System")
+st.title("🤖 AI Career Copilot")
 
 render_profile()
 
@@ -57,6 +60,17 @@ if profile is None:
     st.stop()
 
 resume = profile.resume
+
+discover_people = st.checkbox(
+    "Find LinkedIn contacts for each job",
+    value=True,
+    help="Uses SerpAPI to look up public LinkedIn profiles for each job.",
+)
+
+
+@st.cache_resource
+def get_networking_service():
+    return NetworkingService()
 
 
 if st.button("Run AI Job Copilot 🚀"):
@@ -81,10 +95,13 @@ if st.button("Run AI Job Copilot 🚀"):
             )
 
             jobs = jobs_crawler_agent.run(search)
-            #st.write(jobs)
-            # results = []
-            final_results = []
-            
+
+            if not jobs:
+                st.warning(
+                    "No jobs were found for your search. "
+                    "Try broadening your preferred role or location in your profile."
+                )
+
             i=1
 
             for job in jobs:
@@ -109,24 +126,73 @@ if st.button("Run AI Job Copilot 🚀"):
                 st.write("🧠 Apply Decision:")
                 st.write(decision)
 
-                st.write("Generating Tailored Resume...")
-                tailored_resume = tailored_resume_agent.run(profile, jd_summary)
-                st.write("📄 Tailored Resume:")
-                st.write(tailored_resume)
+                tailored_resume = None
+                if is_apply_yes(decision):
+                    st.write("Generating Tailored Resume...")
+                    try:
+                        pdf_bytes, filename, tailored_resume = (
+                            generate_tailored_resume_pdf(
+                                profile=profile,
+                                job_description=jd_summary,
+                                company=job.get("company", ""),
+                                job_title=job.get("title", ""),
+                            )
+                        )
+                        st.download_button(
+                            label="Download tailored resume (PDF)",
+                            data=pdf_bytes,
+                            file_name=filename,
+                            mime="application/pdf",
+                            key=f"resume-download-{i}",
+                        )
+                    except Exception as e:
+                        st.error(f"Failed to generate tailored resume PDF: {e}")
+                else:
+                    st.info(
+                        "Apply decision is No — skipping tailored resume generation."
+                    )
 
-                
+                st.write("Finding LinkedIn contacts...")
+                networking = None
+                try:
+                    networking = get_networking_service().find_people(
+                        job=job,
+                        discover_people=discover_people,
+                    )
+                except Exception as e:
+                    st.warning(f"LinkedIn profile search failed: {e}")
+
+                if networking is not None:
+                    try:
+                        if networking.people:
+                            st.write("Drafting outreach messages...")
+                            networking = draft_outreach_messages(
+                                profile,
+                                job,
+                                networking,
+                                job_summary=jd_summary,
+                            )
+                        render_networking_result(
+                            networking, key_prefix=f"job-{i}"
+                        )
+                    except Exception as e:
+                        st.warning(
+                            f"Could not display LinkedIn contacts: {e}"
+                        )
+
                 st.markdown(f"[👉 Apply Here]({job.get("apply_link","")})")
                     #st.markdown(f"[👉 Apply Here]({r['job']['apply_link']})")
 
                               
-                add_to_vector_store = get_vector_store()
-                add_to_vector_store(
-                    tailored_resume,
-                    {
-                        "type": "tailored_resume",
-                        "job": job
-                    }
-                )
+                if tailored_resume:
+                    add_to_vector_store = get_vector_store()
+                    add_to_vector_store(
+                        tailored_resume,
+                        {
+                            "type": "tailored_resume",
+                            "job": job
+                        }
+                    )
 
                 i+=1
             

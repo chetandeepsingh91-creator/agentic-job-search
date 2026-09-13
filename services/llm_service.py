@@ -6,15 +6,15 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def call_llm(prompt, retries=3):
+def call_llm(prompt, retries=3, temperature=0.7):
     for attempt in range(retries):
         try:
             response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="openai/gpt-oss-20b",
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7
+                temperature=temperature
             )
             return response.choices[0].message.content
             
